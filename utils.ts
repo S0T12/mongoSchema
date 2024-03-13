@@ -17,11 +17,15 @@ export function generateSchemaFromSampleDoc(doc: any): SchemaDefinitionProperty 
     } else if (typeof value === 'boolean') {
       schemaType = { type: Boolean };
     } else if (Array.isArray(value)) {
-      schemaType = [generateSchemaFromSampleDoc(value[0])];
+      const arrayType = generateSchemaFromSampleDoc(value[0]);
+      schemaType = [arrayType];
     } else if (value instanceof Date) {
       schemaType = { type: Date };
-    } else {
+    } else if (typeof value === 'object' && value !== null) {
       schemaType = generateSchemaFromSampleDoc(value);
+    } else {
+      console.warn(`Unsupported data type for key ${key} in document: ${typeof value}`);
+      schemaType = { type: Schema.Types.Mixed };
     }
 
     schema[key] = schemaType;
