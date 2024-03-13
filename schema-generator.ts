@@ -1,12 +1,19 @@
 import mongoose, { Model, Schema } from 'mongoose';
-import { generateSchemaFromSampleDoc } from './utils';
+import { generateSchemaFromSampleDoc, generateSchemaFile } from './utils';
+import fs from 'fs';
+import path from 'path';
 
-async function generateSchemas(databaseUri: string) {
+async function generateSchemas(databaseUri: string, outputDir: string) {
   try {
     await mongoose.connect(databaseUri, {
-      serverSelectionTimeoutMS: 5000, // Timeout for server selection (5 seconds)
+      serverSelectionTimeoutMS: 5000,
     });
     console.log('Connected to MongoDB!');
+
+    // Create the output directory if it doesn't exist
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
 
     // Get all collection names
     const collections = await mongoose.connection.db.listCollections().toArray();
@@ -37,9 +44,11 @@ async function generateSchemas(databaseUri: string) {
       if (sampleDoc) {
         // Generate schema based on the sample document
         const schema = generateSchemaFromSampleDoc(sampleDoc);
-        console.log(`Generated schema for ${collectionName}:`, schema);
 
-        // You can save the schema to a file or use it in your application
+        // Generate the schema file
+        const schemaFilePath = path.join(outputDir, `${collectionName}.schema.ts`);
+        generateSchemaFile(collectionName, schema, schemaFilePath);
+        console.log(`Generated schema file: ${schemaFilePath}`);
       } else {
         console.log(`Failed to retrieve a sample document from ${collectionName} collection.`);
       }
@@ -52,4 +61,4 @@ async function generateSchemas(databaseUri: string) {
 }
 
 // Usage
-generateSchemas('mongodb://localhost/your-database-name');
+generateSchemas('mongodb://localhost/logs', './schemas');
